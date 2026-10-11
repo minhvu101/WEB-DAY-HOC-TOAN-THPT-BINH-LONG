@@ -16,24 +16,60 @@ import KHBDView from './components/KHBDView';
 import StudentProfileModal from './components/StudentProfileModal';
 import AITutorModal from './components/AITutorModal';
 import AIQuestionGeneratorModal from './components/AIQuestionGeneratorModal';
+import SupabaseSyncModal from './components/SupabaseSyncModal';
+import AuthGate from './components/AuthGate';
+import { authService, AuthUser } from './services/authService';
 
 export const App: React.FC = () => {
-  const [currentRole, setCurrentRole] = useState<UserRole>('teacher');
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  // Session & Authentication State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => authService.getCurrentUser());
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const session = authService.getCurrentUser();
+    return session?.role || 'teacher';
+  });
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const session = authService.getCurrentUser();
+    if (session?.role === 'student') return 'universe';
+    if (session?.role === 'parent') return 'parent';
+    if (session?.role === 'admin') return 'admin';
+    return 'dashboard';
+  });
 
   // Modals state
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState<Student | null>(null);
   const [isAITutorOpen, setIsAITutorOpen] = useState<boolean>(false);
   const [isAIQuestionGenOpen, setIsAIQuestionGenOpen] = useState<boolean>(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false);
 
   // Switch role helper
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, role });
+    }
     if (role === 'student') setActiveTab('universe');
     else if (role === 'parent') setActiveTab('parent');
     else if (role === 'admin') setActiveTab('admin');
     else setActiveTab('dashboard');
   };
+
+  // Logout handler
+  const handleLogout = async () => {
+    await authService.logout();
+    setCurrentUser(null);
+  };
+
+  // If not logged in, enforce Login / Register screen first
+  if (!currentUser) {
+    return (
+      <AuthGate
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          handleRoleChange(user.role);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col">
@@ -45,6 +81,9 @@ export const App: React.FC = () => {
         onTabChange={setActiveTab}
         onOpenAITutor={() => setIsAITutorOpen(true)}
         onOpenAIQuestionGen={() => setIsAIQuestionGenOpen(true)}
+        onOpenSupabaseSync={() => setIsSupabaseModalOpen(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Container */}
@@ -124,6 +163,12 @@ export const App: React.FC = () => {
           // Can navigate or notify
           setActiveTab('assignments');
         }}
+      />
+
+      {/* Supabase Database Connection Modal */}
+      <SupabaseSyncModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
       />
 
       {/* Footer matching reference design */}
