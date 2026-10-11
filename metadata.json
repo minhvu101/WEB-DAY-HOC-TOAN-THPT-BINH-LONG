@@ -1,0 +1,8 @@
+{
+  "name": "Hệ Sinh Thái Dạy Học Toán THPT Bình Long Hiện Đại",
+  "description": "Nền tảng EdTech dạy học Toán THPT thế hệ mới theo CTGDPT 2018 dành cho Giáo viên, Học sinh, Phụ huynh và Nhà trường.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
